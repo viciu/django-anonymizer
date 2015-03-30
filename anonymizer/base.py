@@ -4,11 +4,9 @@ import random
 import sys
 
 from django.db import connection
-from faker import data
 from faker import Faker
-from faker.utils import uk_postcode, bothify
 
-from anonymizer import replacers
+from . import replacers
 
 randrange = random.SystemRandom().randrange
 
@@ -22,14 +20,18 @@ for i in range(ord('0'), ord('9')+1):
 
 general_chars = alphanumeric + " _-"
 
+
 class DjangoFaker(object):
     """
     Class that provides fake data, using Django specific knowledge to ensure
     acceptable data for Django models.
     """
-    faker = Faker()
+    faker = None
 
-    def __init__(self):
+    def __init__(self, faker=None):
+        if not faker:
+            faker = Faker()
+        self.faker = faker
         self.init_values = {}
 
     def _prep_init(self, field):
@@ -40,7 +42,10 @@ class DjangoFaker(object):
         self.init_values[field] = field_vals
 
     def get_allowed_value(self, source, field):
-        retval = source()
+        if callable(source):
+            retval = source()
+        else:
+            retval = source
         if field is None or retval == '':
             return retval
 
@@ -67,7 +72,7 @@ class DjangoFaker(object):
 
         return retval
 
-    ### Public interace ##
+    ### Public interface ##
 
     def varchar(self, field=None):
         """
@@ -76,7 +81,8 @@ class DjangoFaker(object):
         assert field is not None, "The field parameter must be passed to the 'varchar' method."
         max_length = field.max_length
         def source():
-            length = random.choice(range(0, max_length + 1))
+            # Ensure at least 1 character is returned
+            length = random.choice(range(1, max_length + 1))
             return "".join(random.choice(general_chars) for i in xrange(length))
         return self.get_allowed_value(source, field)
 
@@ -85,7 +91,7 @@ class DjangoFaker(object):
         Use a simple pattern to make the field - # is replaced with a random number,
         ? with a random letter.
         """
-        source = lambda: bothify(pattern)
+        source = lambda: self.faker.bothify(pattern)
         return self.get_allowed_value(source, field)
 
     def bool(self, field=None):
@@ -134,16 +140,11 @@ class DjangoFaker(object):
         source = lambda: decimal.Decimal(random.randrange(0, 100000))/(10**field.decimal_places)
         return self.get_allowed_value(source, field)
 
-    def uk_postcode(self, field=None):
-        return self.get_allowed_value(uk_postcode, field)
+    def postcode(self, field=None):
+        return self.get_allowed_value(self.faker.postcode(), field)
 
-    def uk_county(self, field=None):
-        source = lambda: random.choice(data.UK_COUNTIES)
-        return self.get_allowed_value(source, field)
-
-    def uk_country(self, field=None):
-        source = lambda: random.choice(data.UK_COUNTRIES)
-        return self.get_allowed_value(source, field)
+    def country(self, field=None):
+        return self.get_allowed_value(self.faker.country(), field)
 
     def lorem(self, field=None, val=None):
         """
@@ -169,7 +170,7 @@ class DjangoFaker(object):
                     parts[i] = generate(len(p))
                 return "\n".join(parts)
         else:
-            source = self.faker.lorem
+            source = self.faker.lorem()
         return self.get_allowed_value(source, field)
 
     def choice(self, field=None):
@@ -186,7 +187,7 @@ class DjangoFaker(object):
     # name
     # email
     # full_address
-    # phonenumber
+    # phone_number
     # street_address
     # city
     # state
@@ -225,7 +226,12 @@ class Anonymizer(object):
     # values are done first.
     order = 0
 
-    faker = DjangoFaker()
+    faker = None
+
+    def __init__(self, faker=None):
+        if not faker:
+            faker = DjangoFaker()
+        self.faker = faker
 
     def get_query_set(self):
         """
@@ -297,8 +303,8 @@ class Anonymizer(object):
                     sys.stdout.write('.')
                     sys.stdout.flush()
                     query_args = self.create_query_args(values, replacer_attr)
-                    with connection.cursor() as cursor:
-                        cursor.executemany(query, query_args)
+                    cursor = connection.cursor()
+                    cursor.executemany(query, query_args)
                     values = {}
         print ''
 

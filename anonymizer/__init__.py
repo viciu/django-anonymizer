@@ -1,1 +1,1 @@
-from anonymizer.base import Anonymizer
+from .base import Anonymizer

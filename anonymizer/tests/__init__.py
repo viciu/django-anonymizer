@@ -1,10 +1,7 @@
 from datetime import datetime, timedelta, date
 import decimal
-import os
-import sys
 
-from django.conf import settings
-from django.utils import unittest
+from django.test.utils import override_settings
 from django.test import TestCase
 
 from anonymizer import Anonymizer, introspect
@@ -13,6 +10,7 @@ from anonymizer.tests import models as test_models
 
 class TestIntrospect(TestCase):
 
+    @override_settings(ANONYMIZER_SKIP_CHOICES=False)
     def test_eveything(self):
         mod = introspect.create_anonymizers_module(test_models)
         expected = """
@@ -38,7 +36,7 @@ class EverythingModelAnonymizer(Anonymizer):
         ('name', "name"),
         ('email', "email"),
         ('address_city', "city"),
-        ('address_post_code', "uk_postcode"),
+        ('address_post_code', "postcode"),
         ('address', "full_address"),
         ('o1_id', "SKIP"),
         ('something', "lorem"),
@@ -91,7 +89,7 @@ class TestAnonymizer(TestCase):
                 ('name', "name"),
                 ('email', "email"),
                 ('address_city', "city"),
-                ('address_post_code', "uk_postcode"),
+                ('address_post_code', "postcode"),
                 ('address', "full_address"),
                 ('something', "lorem"),
                 ('something_else', "similar_lorem"),
@@ -116,4 +114,3 @@ class TestAnonymizer(TestCase):
             self.assertTrue(o.email.startswith(o.username))
             # test for DjangoFaker.choice
             self.assertTrue(o.sex in ('M', 'F'))
-

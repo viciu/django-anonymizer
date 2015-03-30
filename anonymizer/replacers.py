@@ -5,6 +5,11 @@ varchar.__doc__ = """
 Returns random data for a varchar field.
 """
 
+ssn = lambda anon, obj, field, val: anon.faker.simple_pattern('###-###-###-###', field=field)
+ssn.__doc__ = """
+Returns bothified data for a ssn.
+"""
+
 bool = lambda anon, obj, field, val: anon.faker.bool(field=field)
 bool.__doc__ = """
 Returns a random boolean value (True/False)
@@ -45,19 +50,14 @@ decimal.__doc__ = """
 Returns a random decimal
 """
 
-uk_postcode = lambda anon, obj, field, val: anon.faker.uk_postcode(field=field)
-uk_postcode.__doc__ = """
-Generates a random UK postcode (not necessarily valid, but it will look like one).
+postcode = lambda anon, obj, field, val: anon.faker.postcode(field=field)
+postcode.__doc__ = """
+Generates a random postcode (not necessarily valid, but it will look like one).
 """
 
-uk_country = lambda anon, obj, field, val: anon.faker.uk_country(field=field)
-uk_country.__doc__ = """
-Returns a randomly selected country that is part of the UK
-"""
-
-uk_county = lambda anon, obj, field, val: anon.faker.uk_county(field=field)
-uk_county.__doc__ = """
-Returns a randomly selected county from the UK
+country = lambda anon, obj, field, val: anon.faker.country(field=field)
+country.__doc__ = """
+Returns a randomly selected country
 """
 
 username = lambda anon, obj, field, val: anon.faker.username(field=field)
@@ -90,13 +90,13 @@ similar_email.__doc__ = """
 Generate a random email address using the same domain.
 """
 
-full_address = lambda anon, obj, field, val: anon.faker.full_address(field=field)
+full_address = lambda anon, obj, field, val: anon.faker.address(field=field)
 full_address.__doc__ = """
 Generates a random full address, using newline characters between the lines.
 Resembles a US address
 """
-phonenumber = lambda anon, obj, field, val: anon.faker.phonenumber(field=field)
-phonenumber.__doc__ = """
+phone_number = lambda anon, obj, field, val: anon.faker.phone_number(field=field)
+phone_number.__doc__ = """
 Generates a random US-style phone number
 """
 
@@ -125,7 +125,7 @@ company.__doc__ = """
 Generates a random company name
 """
 
-lorem = lambda anon, obj, field, val: anon.faker.lorem(field=field)
+lorem = lambda anon, obj, field, val: anon.faker.sentence(field=field)
 lorem.__doc__ = """
 Generates a paragraph of lorem ipsum text
 """

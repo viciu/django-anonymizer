@@ -2,6 +2,9 @@ import re
 
 from django.db.models import EmailField
 from django.db.models.loading import get_models
+from django.conf import settings
+
+#TODO: create class Introspect in order to make this code reusable
 
 field_replacers = {
     'AutoField': '"SKIP"',
@@ -18,6 +21,9 @@ field_replacers = {
     'PositiveIntegerField': '"positive_integer"',
     'PositiveSmallIntegerField': '"positive_small_integer"',
     'DecimalField': '"decimal"',
+    'UUIDField': '"SKIP"', # we probably don't want to change uuids
+    'FileField': '"SKIP"', # we probably don't want to change file fields
+    'UpdateUserField': '"SKIP"', # we probably don't want to change last_modified_user
 }
 
 # NB - order matters. 'address' is more generic so should be at the end.
@@ -31,28 +37,35 @@ charfield_replacers = [
     (r'(\b|_)email\d*', '"email"'),
     (r'(\b|_)town\d*', '"city"'),
     (r'(\b|_)city\d*', '"city"'),
-    (r'(\b|_)county\d*', '"uk_county"'),
-    (r'(\b|_)post_code\d*', '"uk_postcode"'),
-    (r'(\b|_)postcode\d*', '"uk_postcode"'),
+    (r'(\b|_)post_code\d*', '"postcode"'),
+    (r'(\b|_)postcode\d*', '"postcode"'),
     (r'(\b|_)zip\d*', '"zip_code"'),
     (r'(\b|_)zipcode\d*', '"zip_code"'),
     (r'(\b|_)zip_code\d*', '"zip_code"'),
-    (r'(\b|_)telephone\d*', '"phonenumber"'),
-    (r'(\b|_)phone\d*', '"phonenumber"'),
-    (r'(\b|_)mobile\d*', '"phonenumber"'),
-    (r'(\b|_)tel\d*\b', '"phonenumber"'),
+    (r'(\b|_)telephone\d*', '"phone_number"'),
+    (r'(\b|_)phone\d*', '"phone_number"'),
+    (r'(\b|_)mobile\d*', '"phone_number"'),
+    (r'(\b|_)tel\d*\b', '"phone_number"'),
     (r'(\b|_)state\d*\b', '"state"'),
-    (r'(\b|_)address\d*', '"full_address"'),
+    (r'(\b|_)address\d*', '"address"'),
 ]
+
+
+integerfield_replacers = [
+    (r'(\b|_)version\d*', '"SKIP"'),  # skip django-reversion specific fields by default
+]
+
 
 def get_replacer_for_field(field):
     # Some obvious ones:
     if isinstance(field, EmailField):
         return '"email"'
 
-    # Use choices, if available.
+    # Use choices, if available and not skipped in settings
     choices = getattr(field, 'choices', None)
     if choices is not None and len(choices) > 0:
+        if getattr(settings, 'ANONYMIZER_SKIP_CHOICES', False):
+            return '"SKIP"'
         return '"choice"'
 
     field_type = field.get_internal_type()
@@ -76,10 +89,16 @@ def get_replacer_for_field(field):
         # Just try some random chars
         return '"varchar"'
 
+    # IntegerFields
+    if field_type.endswith('IntegerField'):
+        for pattern, result in integerfield_replacers:
+            if re.match(pattern + "$", field.attname):
+                return result
 
     try:
         r = field_replacers[field_type]
     except KeyError:
+        print('Cannot guess ', field_type)
         r = "UNKNOWN_FIELD"
 
     return r

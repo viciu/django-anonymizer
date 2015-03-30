@@ -12,7 +12,7 @@ from anonymizer import Anonymizer
 class Command(AppCommand):
 
     def handle_app(self, app, **options):
-
+        #TODO: add support for anonymizing selected models with modulename.Model
         anonymizers_module = ".".join(app.__name__.split(".")[:-1] + ["anonymizers"])
         mod = importlib.import_module(anonymizers_module)
 
@@ -38,7 +38,7 @@ class Command(AppCommand):
                 anonymizers.append(v)
 
         anonymizers.sort(key=lambda c:c.order)
-        for a in anonymizers:
-            with transaction.atomic():
-                a().run()
+        for anonymizer in anonymizers:
+            with transaction.commit_on_success():
+                anonymizer().run()
 

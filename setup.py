@@ -9,7 +9,7 @@ def read(*rnames):
 
 setup(
     name = "django-anonymizer",
-    version = '0.5.0.4-bw',
+    version = '0.6',
     packages = find_packages(),
     include_package_data = True,
 
@@ -39,5 +39,5 @@ setup(
         "Topic :: Software Development :: Testing",
         "Topic :: Database"
         ],
-    install_requires = ['faker >= 0.0.4-bw'],
+    install_requires = ['fake-factory >= 0.5.0'],
 )
